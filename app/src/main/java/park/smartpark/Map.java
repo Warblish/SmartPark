@@ -1,5 +1,6 @@
 package park.smartpark;
 
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -69,7 +70,11 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
                 return true;
             case(R.id.action_pay):
                 //Handle when payment icon is pressed
-                return true;
+                Intent intent = new Intent(this, PayActivity.class);
+                //Send additional information to the pay activity
+                //String message = editText.getText().toString();
+                //intent.putExtra(EXTRA_MESSAGE, message);
+                startActivity(intent);
         }
 
         return super.onOptionsItemSelected(item);
@@ -146,6 +151,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
                             extreme_coords[i] = m.getPosition().longitude;
                         }
                     } else{
+                        //Update if the next coordinate is more extreme than the current one in extreme_coords
                         switch(i){
                             case 0:
                                 //Most nothern

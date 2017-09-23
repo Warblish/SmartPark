@@ -3,7 +3,7 @@
     <!-- "Pay example", should appear as action button if possible -->
     <item
         android:id="@+id/action_pay"
-        android:icon="@drawable/ic_action_name"
+        android:icon="@drawable/ic_payment2"
         android:title="@string/payment_icon"
         app:showAsAction="ifRoom"/>
 

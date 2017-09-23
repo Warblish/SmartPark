@@ -3,4 +3,6 @@
     <string name="title_activity_map">MSU Parking Map</string>
     <string name="payment_icon">Pay for Parking</string>
     <string name="action_settings">Settings</string>
+    <string name="title_activity_pay">Pay for Parking</string>
+    <string name="card_input_widget">hi</string>
 </resources>
