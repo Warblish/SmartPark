@@ -2,8 +2,8 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
     <!-- "Pay example", should appear as action button if possible -->
     <item
-        android:id="@+id/action_favorite"
-        android:icon="@mipmap/ic_payment"
+        android:id="@+id/action_pay"
+        android:icon="@drawable/ic_action_name"
         android:title="@string/payment_icon"
         app:showAsAction="ifRoom"/>
 
