@@ -1,22 +1,11 @@
 package park.smartpark;
 
-import android.support.v4.app.FragmentActivity;
-import android.os.Bundle;
-
-import java.net.HttpURLConnection;
-import java.net.URLConnection;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.net.URL;
-import java.nio.charset.Charset;
-import java.util.*;
 import android.os.AsyncTask;
-import android.util.*;
+import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.support.v7.widget.Toolbar;
 
-import org.json.*;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -24,7 +13,20 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-public class Map extends FragmentActivity implements OnMapReadyCallback {
+import org.json.JSONArray;
+import org.json.JSONException;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.URL;
+import java.net.URLConnection;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+
+public class Map extends AppCompatActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     volatile boolean busy = false;
@@ -37,6 +39,8 @@ public class Map extends FragmentActivity implements OnMapReadyCallback {
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+        Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
+        setSupportActionBar(myToolbar);
     }
 
 
