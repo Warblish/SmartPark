@@ -1,12 +1,15 @@
 package park.smartpark;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -14,6 +17,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import org.json.JSONArray;
@@ -29,15 +33,15 @@ import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 
-public class Map extends AppCompatActivity implements OnMapReadyCallback {
-
+public class Map extends AppCompatActivity implements OnMapReadyCallback,
+        GoogleMap.OnMarkerClickListener, GoogleMap.OnInfoWindowClickListener, GoogleMap.InfoWindowAdapter {
     private GoogleMap mMap;
     volatile boolean busy = false;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -45,7 +49,12 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
         Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
         setSupportActionBar(myToolbar);
     }
-
+    public void openDirectionsTo(LatLng pos) {
+        Uri gmmIntentUri = Uri.parse("google.navigation:q=" + pos.latitude + "," + pos.longitude);
+        Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+        mapIntent.setPackage("com.google.android.apps.maps");
+        startActivity(mapIntent);
+    }
     /*
     Following functions handle the action bar
     onCreateOptionsMenu sets up the action bar and adds any buttons from res/menu/main_menu.xml
@@ -88,8 +97,10 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         loadMarkers();
+        mMap.setOnMarkerClickListener(this);
+        mMap.setOnInfoWindowClickListener(this);
+        mMap.setInfoWindowAdapter(this);
     }
-
     public void loadMarkers() {
         new HttpAsyncGet().execute("https://michigan-parking.appspot.com/api/parkingdata/?key=2ljbiiI7bo");
     }
@@ -101,7 +112,6 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
         }
         return sb.toString();
     }
-
     public JSONArray readJsonFromUrl(String url) throws IOException, JSONException {
         try {
             URL u = new URL(url);
@@ -117,7 +127,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
                 is.close();
             }
         } catch (Exception e) {
-            Log.wtf("testerror", e.toString());
+            //Log.wtf("testerror", e.toString());
         }
         return null;
     }
@@ -129,7 +139,6 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
         // onPostExecute displays the results of the AsyncTask.
         @Override
         protected void onPostExecute(ArrayList<MarkerOptions> result) {
-            Log.wtf("test", "cp5");
             for(MarkerOptions m : result) {
                 mMap.addMarker(m);
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(m.getPosition()));
@@ -176,10 +185,10 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
                 }
             }
             //Print values to console for debugging purposes
-            Log.wtf("northern most extreme bound", Double.toString(extreme_coords[0]));
-            Log.wtf("southern most extreme bound", Double.toString(extreme_coords[1]));
-            Log.wtf("eastern most extreme bound", Double.toString(extreme_coords[2]));
-            Log.wtf("western most extreme bound", Double.toString(extreme_coords[3]));
+            //Log.wtf("northern most extreme bound", Double.toString(extreme_coords[0]));
+            //Log.wtf("southern most extreme bound", Double.toString(extreme_coords[1]));
+            //Log.wtf("eastern most extreme bound", Double.toString(extreme_coords[2]));
+            //Log.wtf("western most extreme bound", Double.toString(extreme_coords[3]));
             //Create bounds for the camera so the map encompasses the whole campus, but is still zoomed in
             //Create new LatLng objects for the two corners (northwest and southeast)
             LatLng northeast = new LatLng(extreme_coords[0], extreme_coords[2]);
@@ -187,8 +196,28 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
             //Create new LatLngBounds object
             LatLngBounds bounds =  new LatLngBounds(southwest, northeast);
             mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100));
-            Log.wtf("test", "cp6");
         }
+    }
+    //Required methods for Marker interfaces
+    public View getInfoWindow (Marker marker) {
+        return null;
+    }
+    public View getInfoContents (Marker marker) {
+        return null;
+    }
+    @Override
+    public boolean onMarkerClick(final Marker marker) {
+        //openDirectionsTo(marker.getPosition());
+        Toast.makeText(this,
+                marker.getTitle() +
+                        " has been clicked ",
+                Toast.LENGTH_SHORT).show();
+        return false;
+    }
+    @Override
+    public void onInfoWindowClick(final Marker marker) {
+        //Log.wtf("test", "window clicked");
+        openDirectionsTo(marker.getPosition());
     }
     public ArrayList<MarkerOptions> getMarkers(String url) {
         ArrayList<MarkerOptions> ms = new ArrayList<MarkerOptions>();
@@ -219,7 +248,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
             }
 
         } catch (Exception e) {
-            Log.wtf("testerror2", e.getLocalizedMessage());
+            //Log.wtf("testerror2", e.getLocalizedMessage());
         }
         return ms;
     }
