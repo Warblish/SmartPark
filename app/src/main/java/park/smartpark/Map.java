@@ -1,6 +1,9 @@
 package park.smartpark;
 
+<<<<<<< HEAD
 import android.content.Intent;
+=======
+>>>>>>> parent of 3799efb... Added Directins Feature
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
