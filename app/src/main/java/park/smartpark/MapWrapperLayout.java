@@ -69,7 +69,6 @@ public class MapWrapperLayout extends RelativeLayout {
         boolean ret = false;
         // Make sure that the infoWindow is shown and we have all the needed references
         if (marker != null && marker.isInfoWindowShown() && map != null && infoWindow != null) {
-            // Get a marker position on the screen
             Point point = map.getProjection().toScreenLocation(marker.getPosition());
 
             // Make a copy of the MotionEvent and adjust it's location
@@ -81,6 +80,7 @@ public class MapWrapperLayout extends RelativeLayout {
 
             // Dispatch the adjusted MotionEvent to the infoWindow
             ret = infoWindow.dispatchTouchEvent(copyEv);
+            return true; //dont make the window itself look "clicked"
         }
         // If the infoWindow consumed the touch event, then just return true.
         // Otherwise pass this event to the super class and return it's result

@@ -1,15 +1,19 @@
 package park.smartpark;
 
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Toast;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -32,22 +36,38 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.HashMap;
 
-public class Map extends AppCompatActivity implements OnMapReadyCallback,
-        GoogleMap.OnMarkerClickListener, GoogleMap.OnInfoWindowClickListener, GoogleMap.InfoWindowAdapter {
+public class Map extends AppCompatActivity implements OnMapReadyCallback {
+    public HashMap<Integer, ParkingLot> lotDictionary = new HashMap<Integer, ParkingLot>();
+    private ViewGroup infoWindow;
+    private OnInfoWindowElemTouchListener infoButtonListener;
     private GoogleMap mMap;
     volatile boolean busy = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_map);
+        try {
+            setContentView(R.layout.activity_map);
 
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
-        Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
-        setSupportActionBar(myToolbar);
+            // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+            SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                    .findFragmentById(R.id.map);
+            mapFragment.getMapAsync(this);
+            this.infoWindow = (ViewGroup)getLayoutInflater().inflate(R.layout.info_window, null);
+            Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
+            setSupportActionBar(myToolbar);
+            this.infoButtonListener = new OnInfoWindowElemTouchListener(((Button)infoWindow.findViewById(R.id.button)))
+            {
+                @Override
+                protected void onClickConfirmed(View v, Marker marker) {
+                    openDirectionsTo(marker.getPosition());
+                }
+            };
+            ((Button)infoWindow.findViewById(R.id.button)).setOnTouchListener(infoButtonListener);
+        } catch (Exception e) {
+            Log.wtf("testerror", e.toString());
+        }
     }
     public void openDirectionsTo(LatLng pos) {
         Uri gmmIntentUri = Uri.parse("google.navigation:q=" + pos.latitude + "," + pos.longitude);
@@ -99,11 +119,51 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback,
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
-        loadMarkers();
-        mMap.setOnMarkerClickListener(this);
-        mMap.setOnInfoWindowClickListener(this);
-        mMap.setInfoWindowAdapter(this);
+        try {
+            mMap = googleMap;
+            final MapWrapperLayout mapWrapperLayout = (MapWrapperLayout) findViewById(R.id.map_relative_layout);
+
+            loadMarkers();
+            mapWrapperLayout.init(mMap, getPixelsFromDp(this, 39 + 20));
+            //mMap.setOnMarkerClickListener(this);
+            //mMap.setOnInfoWindowClickListener(this);
+            mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+                @Override
+                public View getInfoWindow(Marker marker) {
+                    return null;
+                }
+
+                @Override
+                public View getInfoContents(Marker marker) {
+                    // Setting up the infoWindow with current's marker info
+                    try {
+                        int pid = Integer.parseInt(marker.getTitle());
+                        if (lotDictionary.containsKey(pid)) {
+                            ParkingLot lot = lotDictionary.get(pid);
+                            ((TextView) infoWindow.findViewById(R.id.title)).setText(lot.lotname);
+                            ((TextView) infoWindow.findViewById(R.id.snippet0)).setText("Available Spots: " + lot.openspots);
+                            ((TextView) infoWindow.findViewById(R.id.snippet1)).setText("Faculty Spots: " + lot.facultyspots);
+                            ((TextView) infoWindow.findViewById(R.id.snippet2)).setText("Handicapped Spots: " + lot.handicapspots);
+                            if(lot.students) {
+                                ((TextView) infoWindow.findViewById(R.id.snippet3)).setText("Student Parking Allowed");
+                            } else {
+                                ((TextView) infoWindow.findViewById(R.id.snippet3)).setText("Student Parking NOT Allowed");
+                            }
+                            infoButtonListener.setMarker(marker);
+
+                            mapWrapperLayout.setMarkerWithInfoWindow(marker, infoWindow);
+                            return infoWindow;
+                        }
+
+                    } catch (Exception e) {
+                        Log.wtf("test", e.toString());
+                    }
+                    return null;
+                }
+            });
+        } catch (Exception e) {
+            Log.wtf("testerror", e.toString());
+        }
     }
     public void loadMarkers() {
         new HttpAsyncGet().execute("https://michigan-parking.appspot.com/api/parkingdata/?key=2ljbiiI7bo");
@@ -135,22 +195,27 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback,
         }
         return null;
     }
-    private class HttpAsyncGet extends AsyncTask<String, Void, ArrayList<MarkerOptions>> {
+    private class HttpAsyncGet extends AsyncTask<String, Void, ArrayList<ParkingLot>> {
         @Override
-        protected ArrayList<MarkerOptions> doInBackground(String... url) {
-            return getMarkers(url[0]);
+        protected ArrayList<ParkingLot> doInBackground(String... url) {
+            return getLots(url[0]);
         }
         // onPostExecute displays the results of the AsyncTask.
         @Override
-        protected void onPostExecute(ArrayList<MarkerOptions> result) {
-            for(MarkerOptions m : result) {
-                mMap.addMarker(m);
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(m.getPosition()));
+        protected void onPostExecute(ArrayList<ParkingLot> result) {
+            Log.wtf("test", "size: " + result.size());
+            for(ParkingLot m : result) {
+                Log.wtf("test", m.getPosition().toString());
+                MarkerOptions c = new MarkerOptions().position(m.getPosition());
+                c.title("" + m.pid);
+                lotDictionary.put(m.pid, m);
+                mMap.addMarker(c);
+                //mMap.moveCamera(CameraUpdateFactory.newLatLng(m.getPosition()));
             }
             //Find the extreme bounds for LatLng (get the northern most, southern most, eastern most, western most points on the map)
             double[] extreme_coords = new double[4]; //Northern, southern, eastern, western
             for(int i = 0; i<4; i++) {
-                for (MarkerOptions m : result) {
+                for (ParkingLot m : result) {
                     if (extreme_coords[i] == 0){
                         //The most extreme coordinate has not been set so just set it to the first marker in the series
                         if(i==0 || i==1){
@@ -202,29 +267,8 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback,
             mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100));
         }
     }
-    //Required methods for Marker interfaces
-    public View getInfoWindow (Marker marker) {
-        return null;
-    }
-    public View getInfoContents (Marker marker) {
-        return null;
-    }
-    @Override
-    public boolean onMarkerClick(final Marker marker) {
-        //openDirectionsTo(marker.getPosition());
-        Toast.makeText(this,
-                marker.getTitle() +
-                        " has been clicked ",
-                Toast.LENGTH_SHORT).show();
-        return false;
-    }
-    @Override
-    public void onInfoWindowClick(final Marker marker) {
-        //Log.wtf("test", "window clicked");
-        openDirectionsTo(marker.getPosition());
-    }
-    public ArrayList<MarkerOptions> getMarkers(String url) {
-        ArrayList<MarkerOptions> ms = new ArrayList<MarkerOptions>();
+    public ArrayList<ParkingLot> getLots(String url) {
+        ArrayList<ParkingLot> ms = new ArrayList<ParkingLot>();
         //JSONArray dataArray = new JSONArray();
         try {
             JSONArray dataArray = readJsonFromUrl("http://michigan-parking.appspot.com/api/parkingdata/?key=2ljbiiI7bo");
@@ -239,21 +283,32 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback,
             {
                 double lat = dataArray.getJSONObject(i).getDouble("lat");
                 double longi = dataArray.getJSONObject(i).getDouble("long");
-                int spots = dataArray.getJSONObject(i).getInt("openspots");
+                int pid = dataArray.getJSONObject(i).getInt("id");
+                int openspots = dataArray.getJSONObject(i).getInt("openspots");
+                int handicapspots = dataArray.getJSONObject(i).getInt("handicapspots");
+                int facultyspots = dataArray.getJSONObject(i).getInt("handicapspots");
+                int totalspots = dataArray.getJSONObject(i).getInt("maximumopenspots");
                 String lotname = dataArray.getJSONObject(i).getString("name");
+                boolean students = dataArray.getJSONObject(i).getInt("students_allowed")==1;
                 LatLng location = new LatLng(lat,longi);
-                MarkerOptions m = new MarkerOptions();
+                ParkingLot m = new ParkingLot(pid, location, lotname, totalspots, openspots, handicapspots, facultyspots, students);
+                ms.add(m);
+                /*MarkerOptions m = new MarkerOptions();
                 m.position(location);
                 m.title(lotname);
                 m.snippet("Available Spots: " + spots);
 
-                ms.add(m);
+                ms.add(m);*/
 
             }
 
         } catch (Exception e) {
-            //Log.wtf("testerror2", e.getLocalizedMessage());
+            Log.wtf("testerror2", e.toString());
         }
         return ms;
+    }
+    public static int getPixelsFromDp(Context context, float dp) {
+        final float scale = context.getResources().getDisplayMetrics().density;
+        return (int)(dp * scale + 0.5f);
     }
 }

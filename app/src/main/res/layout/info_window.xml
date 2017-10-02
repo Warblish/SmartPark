@@ -2,26 +2,52 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:gravity="center_vertical" >
+    android:gravity="center"
+    android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_marginRight="10dp" >
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:gravity="center"
+        android:orientation="vertical">
+
 
         <TextView
+            android:textColor="#000000"
+
             android:id="@+id/title"
+            android:gravity="center"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="18sp"
-            android:text="Title" />
+            android:text="Title"
+            android:textSize="20sp" />
 
         <TextView
-            android:id="@+id/snippet"
+            android:gravity="center"
+            android:id="@+id/snippet0"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="snippet" />
+            android:text="Snippet" />
+        <TextView
+            android:gravity="center"
+            android:id="@+id/snippet1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Snippet" />
+        <TextView
+            android:gravity="center"
+            android:id="@+id/snippet2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Snippet" />
+        <TextView
+            android:gravity="center"
+            android:id="@+id/snippet3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Snippet" />
 
     </LinearLayout>
 
@@ -29,6 +55,6 @@
         android:id="@+id/button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Button" />
+        android:text="Directions" />
 
 </LinearLayout>
