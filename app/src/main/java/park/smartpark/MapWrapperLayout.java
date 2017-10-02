@@ -80,7 +80,7 @@ public class MapWrapperLayout extends RelativeLayout {
 
             // Dispatch the adjusted MotionEvent to the infoWindow
             ret = infoWindow.dispatchTouchEvent(copyEv);
-            return true; //dont make the window itself look "clicked"
+
         }
         // If the infoWindow consumed the touch event, then just return true.
         // Otherwise pass this event to the super class and return it's result
