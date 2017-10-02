@@ -78,7 +78,11 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback,
                 return true;
             case(R.id.action_pay):
                 //Handle when payment icon is pressed
-                return true;
+                Intent intent = new Intent(this, PayActivity.class);
+                //Send additional information to the pay activity
+                //String message = editText.getText().toString();
+                //intent.putExtra(EXTRA_MESSAGE, message);
+                startActivity(intent);
         }
 
         return super.onOptionsItemSelected(item);
