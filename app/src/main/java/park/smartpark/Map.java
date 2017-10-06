@@ -19,6 +19,8 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -41,9 +43,10 @@ import java.util.HashMap;
 public class Map extends AppCompatActivity implements OnMapReadyCallback {
     public HashMap<Integer, ParkingLot> lotDictionary = new HashMap<Integer, ParkingLot>();
     private ViewGroup infoWindow;
-    private OnInfoWindowElemTouchListener infoButtonListener;
     private GoogleMap mMap;
     volatile boolean busy = false;
+    private OnInfoWindowElemTouchListener infoButtonListener;
+    private OnInfoWindowElemTouchListener infoButtonListener2;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,14 +60,22 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
             this.infoWindow = (ViewGroup)getLayoutInflater().inflate(R.layout.info_window, null);
             Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
             setSupportActionBar(myToolbar);
-            this.infoButtonListener = new OnInfoWindowElemTouchListener(((Button)infoWindow.findViewById(R.id.button)))
+            infoButtonListener = new OnInfoWindowElemTouchListener(((Button)infoWindow.findViewById(R.id.button)))
             {
                 @Override
                 protected void onClickConfirmed(View v, Marker marker) {
                     openDirectionsTo(marker.getPosition());
                 }
             };
+            infoButtonListener2 = new OnInfoWindowElemTouchListener(((Button)infoWindow.findViewById(R.id.button2)))
+            {
+                @Override
+                protected void onClickConfirmed(View v, Marker marker) {
+                    openPay(marker);
+                }
+            };
             ((Button)infoWindow.findViewById(R.id.button)).setOnTouchListener(infoButtonListener);
+            ((Button)infoWindow.findViewById(R.id.button2)).setOnTouchListener(infoButtonListener2);
         } catch (Exception e) {
             Log.wtf("testerror", e.toString());
         }
@@ -74,6 +85,13 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
         Intent mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
         mapIntent.setPackage("com.google.android.apps.maps");
         startActivity(mapIntent);
+    }
+    public void openPay(Marker m) {
+        Intent intent = new Intent(this, PayActivity.class);
+        //Send additional information to the pay activity
+        //String message = editText.getText().toString();
+        //intent.putExtra(EXTRA_MESSAGE, message);
+        startActivity(intent);
     }
     /*
     Following functions handle the action bar
@@ -150,7 +168,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
                                 ((TextView) infoWindow.findViewById(R.id.snippet3)).setText("Student Parking NOT Allowed");
                             }
                             infoButtonListener.setMarker(marker);
-
+                            infoButtonListener2.setMarker(marker);
                             mapWrapperLayout.setMarkerWithInfoWindow(marker, infoWindow);
                             return infoWindow;
                         }
@@ -195,6 +213,18 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
         }
         return null;
     }
+    public BitmapDescriptor getIcon(ParkingLot p) {
+        float full = 0.95f;
+        float medium = 0.75f;
+        float ratio = p.openspots/p.totalspots;
+        if (ratio > full) {
+            return (BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA));
+        } else if (ratio > medium) {
+            return (BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW));
+        } else {
+            return (BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
+        }
+    }
     private class HttpAsyncGet extends AsyncTask<String, Void, ArrayList<ParkingLot>> {
         @Override
         protected ArrayList<ParkingLot> doInBackground(String... url) {
@@ -208,6 +238,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
                 Log.wtf("test", m.getPosition().toString());
                 MarkerOptions c = new MarkerOptions().position(m.getPosition());
                 c.title("" + m.pid);
+                c.icon(getIcon(m));
                 lotDictionary.put(m.pid, m);
                 mMap.addMarker(c);
                 //mMap.moveCamera(CameraUpdateFactory.newLatLng(m.getPosition()));
