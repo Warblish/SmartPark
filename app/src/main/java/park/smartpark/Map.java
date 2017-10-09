@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -12,7 +13,11 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -39,9 +44,13 @@ import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
-public class Map extends AppCompatActivity implements OnMapReadyCallback {
+public class Map extends AppCompatActivity implements OnMapReadyCallback, OnItemSelectedListener {
+
+    public EnumFilter filter = EnumFilter.NONE;
     public HashMap<Integer, ParkingLot> lotDictionary = new HashMap<Integer, ParkingLot>();
+    public ArrayList<Marker> markerList = new ArrayList<Marker>();
     private ViewGroup infoWindow;
     private GoogleMap mMap;
     volatile boolean busy = false;
@@ -76,6 +85,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
             };
             ((Button)infoWindow.findViewById(R.id.button)).setOnTouchListener(infoButtonListener);
             ((Button)infoWindow.findViewById(R.id.button2)).setOnTouchListener(infoButtonListener2);
+
         } catch (Exception e) {
             Log.wtf("testerror", e.toString());
         }
@@ -103,6 +113,23 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main_menu, menu);
+        // Spinner element
+        MenuItem item = menu.findItem(R.id.spinner);
+        Spinner spinner = (Spinner) MenuItemCompat.getActionView(item);
+
+        // Spinner click listener
+        spinner.setOnItemSelectedListener(this);
+
+        // Spinner Drop down elements
+        List<String> categories = new ArrayList<String>();
+        for(EnumFilter e: EnumFilter.class.getEnumConstants()) {
+            categories.add(e.Text);
+        }
+
+        // Creating adapter for spinner
+        ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, categories);
+        dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(dataAdapter);
         return true;
     }
 
@@ -111,9 +138,9 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
         // Handle action bar item clicks here.
 
         switch(item.getItemId()){
-            case(R.id.action_settings):
+            /*case(R.id.action_settings):
                 //Handle if the settings button is pressed (nothing happens right now)
-                return true;
+                return true;*/
             case(R.id.action_pay):
                 //Handle when payment icon is pressed
                 Intent intent = new Intent(this, PayActivity.class);
@@ -194,6 +221,16 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
         }
         return sb.toString();
     }
+    public void updateMarkers() {
+        for(Marker m : markerList) {
+            int pid = Integer.parseInt(m.getTitle());
+            if (lotDictionary.containsKey(pid)) {
+                //UPDATE FROM DATABASE
+                ParkingLot p = lotDictionary.get(pid);
+                m.setIcon(getIcon(p));
+            }
+        }
+    }
     public JSONArray readJsonFromUrl(String url) throws IOException, JSONException {
         try {
             URL u = new URL(url);
@@ -214,11 +251,19 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
         return null;
     }
     public BitmapDescriptor getIcon(ParkingLot p) {
+        float ratio = p.openspots/p.totalspots;
+        //if(filter == EnumFilter.STUDENT && !p.students) {
+        if(filter == EnumFilter.STUDENT) {
+            return (BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA));
+        } else if(filter == EnumFilter.FACULTY) {
+            ratio = 0;
+        } else {
+
+        }
         float full = 0.95f;
         float medium = 0.75f;
-        float ratio = p.openspots/p.totalspots;
         if (ratio > full) {
-            return (BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA));
+            return (BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
         } else if (ratio > medium) {
             return (BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW));
         } else {
@@ -240,7 +285,7 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
                 c.title("" + m.pid);
                 c.icon(getIcon(m));
                 lotDictionary.put(m.pid, m);
-                mMap.addMarker(c);
+                markerList.add(mMap.addMarker(c));
                 //mMap.moveCamera(CameraUpdateFactory.newLatLng(m.getPosition()));
             }
             //Find the extreme bounds for LatLng (get the northern most, southern most, eastern most, western most points on the map)
@@ -341,5 +386,38 @@ public class Map extends AppCompatActivity implements OnMapReadyCallback {
     public static int getPixelsFromDp(Context context, float dp) {
         final float scale = context.getResources().getDisplayMetrics().density;
         return (int)(dp * scale + 0.5f);
+    }
+    @Override
+    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+        // On selecting a spinner item
+        String item = parent.getItemAtPosition(position).toString();
+        this.filter = EnumFilter.get(item);
+        updateMarkers();
+        // Showing selected spinner item
+        //Toast.makeText(parent.getContext(), "Selected: " + item, Toast.LENGTH_LONG).show();
+
+    }
+
+    public void onNothingSelected(AdapterView<?> arg0) {
+        // TODO Auto-generated method stub
+
+    }
+}
+enum EnumFilter {
+
+    NONE("No Filter"),
+    HANDICAP("Handicap"),
+    STUDENT("Student"),
+    FACULTY("Faculty"),
+    PAID("Paid");
+    public String Text;
+    EnumFilter(String text) {this.Text = text;}
+    public static EnumFilter get(String t) {
+        for(EnumFilter e : EnumFilter.class.getEnumConstants()) {
+            if(e.Text.equals(t)) {
+                return e;
+            }
+        }
+        return EnumFilter.NONE;
     }
 }
